@@ -106,13 +106,13 @@ __global__ void pwRelu(float *c, int m, int n){
     float4 cData = *(cGmem);
 
     if(cData.w < cutoff)
-      cData.w *= 0;
-    if(cData.x < cutoff)
-      cData.x *= 0;
-    if(cData.y < cutoff)
-      cData.y *= 0;
-    if(cData.z < cutoff)
-      cData.z *= 0;
+      cData.w = 0;
+    if(cData.x< cutoff)
+      cData.x = 0;
+    if(cData.y< cutoff)
+      cData.y = 0;
+    if(cData.z< cutoff)
+      cData.z = 0;
 
     *(cGmem) = cData;
   }
