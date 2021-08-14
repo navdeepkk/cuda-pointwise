@@ -20,7 +20,7 @@ for pm in problem_size_m:
                 tidy = re.findall('\d*\.?\d+', res.decode('utf-8'))                                                              
                 print(pm,", ",pn,", ",pk,", ",tidy)
 
-subprocess.run(["/usr/local/cuda-11.2/bin/nvcc", "-gencode",  "arch=compute_75,code=sm_75", "-lcublas", "gemm_mat_add_relu.cu"])
+subprocess.run(["/usr/local/cuda-11.2/bin/nvcc", "-gencode",  "arch=compute_75,code=sm_75", "-lcublas", "gemm_mat_add.cu"])
 print("mat_add")
 
 for pm in problem_size_m:
