@@ -42,20 +42,6 @@ __global__ void init_c(float *c_float, int M, int N) {
   }
 }
 
-__global__ void init_c_cst(float *c_float, int M, int N) {
-  int c16 = 5;
-  for(int i = 0; i < M; i++){
-    for(int j = 0; j < N; j++){
-      int im = i % c16;
-      int jm = j % c16;
-      int add = im + jm;
-      int am = add % c16;
-      float resf = (float) am;
-      c_float[i * N + j] = resf;
-    }
-  }
-}
-
 void print_res_host(float * arr, int m, int n) {
   std::cout << "[";
   for(int i = 0; i < m; i++){
@@ -77,21 +63,18 @@ void print_res_host(float * arr, int m, int n) {
   std::cout << "]";
 }
 
-__global__ void matAdd(float *c, float* c_cst, int m, int n){
+__global__ void matAdd(float *c, int m, int n){
+  float cst = 5.0f;
   for(int i = blockIdx.x * blockDim.x + threadIdx.x; i < m * n; i += (((m * n) + (NUM_THREADS_PER_BLOCK * vec) - 1) / (NUM_THREADS_PER_BLOCK * vec)) * blockDim.x * vec) {
     // Calculate this block's starting address.
     float *base = c + (i * vec);
     float4 *cGmem = (float4*)base;
     float4 cData = *(cGmem);
 
-    float *cst_base = c_cst + (i * vec);
-    float4 *cst_cGmem = (float4*)cst_base;
-    float4 cst_cData = *(cst_cGmem);
-
-    cData.w = cData.w + cst_cData.w;
-    cData.x = cData.x + cst_cData.x;
-    cData.y = cData.y + cst_cData.y;
-    cData.z = cData.z + cst_cData.z;
+    cData.w = cData.w + cst;
+    cData.x = cData.x + cst;
+    cData.y = cData.y + cst;
+    cData.z = cData.z + cst;
 
     *(cGmem) = cData;
     //printf("%f\n",(float)cData.w);
@@ -113,20 +96,17 @@ int main(int argc, char **argv)
   cublasCreate(&handle);
 
   half *A, *B;
-  float *C, *C_cst;
+  float *C;
 
   cudaMalloc(&A, M * K * sizeof(half));
   cudaMalloc(&B, K * N * sizeof(half));
   cudaMalloc(&C, M * N * sizeof(float));
-  cudaMalloc(&C_cst, M * N * sizeof(float));
 
   float alpha = 1.0;
   float beta = 1.0;
 
   init_a_b<<<1, 1>>>(A, B, M, N, K);
   init_c<<<1, 1>>>(C, M, N);
-  init_c_cst<<<1, 1>>>(C_cst, M, N);
-
 
   // Warmup iterations.
   for(int i = 0; i < 5; ++i){
@@ -154,7 +134,7 @@ int main(int argc, char **argv)
     }
     dim3 block(NUM_THREADS_PER_BLOCK, 1, 1);
     dim3 grid(((M * N) + (NUM_THREADS_PER_BLOCK * vec) - 1) / (NUM_THREADS_PER_BLOCK * vec), 1, 1);
-    matAdd<<<grid, block>>>(C, C_cst, M, N);
+    matAdd<<<grid, block>>>(C, M, N);
     cudaEventRecord(end);
     cudaEventSynchronize(end);
     cudaEventElapsedTime(&ms, start, end);
